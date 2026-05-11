@@ -38,7 +38,7 @@ class GMapperCoverScheme:
     """Adaptive cover via Gaussian mixture models
     introduced in Alvarado, et al. [#gmapper]_, G-Mapper is a scheme for
     producing a cover for Mapper inspired by the G-means clustering algorithm
-    [#gmeans]_. In summary, the algorithm iteratival splits intervals until the
+    [#gmeans]_. In summary, the algorithm iteratively splits intervals until the
     data contained within that interval looks "normal enough" (the :code:`ad_threshold`).
     Instead of doing this split naïvely the interval is split such that the
     resulting two intervals look as normal as possible (using a gaussian mixture model).
