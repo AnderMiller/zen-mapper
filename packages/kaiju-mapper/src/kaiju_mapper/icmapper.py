@@ -41,6 +41,7 @@ import heapq
 import logging
 from collections import deque
 from dataclasses import dataclass, field
+from functools import cmp_to_key
 from math import log, pi
 
 import numpy as np
@@ -178,6 +179,9 @@ class ICMapperCoverScheme:
         else:  # defensive; validated in __post_init__
             raise ValueError(f"Unknown method: {self.method!r}")
 
+        # double check no duplicates -- can throw off max_intervals
+        # but avoids having to call it too much
+        self._remove_duplicate_cover_elements()
         return [
             interval.members
             for interval in self.intervals
@@ -231,6 +235,44 @@ class ICMapperCoverScheme:
         )
 
         return self._with_members(left), self._with_members(right)
+
+    def _remove_duplicate_cover_elements(self, debug=True):
+        # Sort the cover elements by starting element
+        intervals_list = list(x for x in self.intervals)
+
+        # Custom comparator to use python's built in compare
+        def c(a: ICInterval, b: ICInterval):
+            if a.lower_bound < b.lower_bound:
+                return -1
+            elif a.lower_bound == b.lower_bound:
+                if a.upper_bound > b.lower_bound:
+                    return -1
+                elif a.upper_bound < b.upper_bound:
+                    return 1
+                else:
+                    return 0
+            else:
+                return 1
+
+        intervals_list.sort(key=cmp_to_key(c))
+        marked_for_deletion = []
+        for i in range(len(intervals_list)):
+            for j in range(i + 1, len(intervals_list)):
+                a: ICInterval = intervals_list[i]
+                b: ICInterval = intervals_list[j]
+                # Contained case
+                if a.lower_bound <= b.lower_bound and a.upper_bound >= b.upper_bound:
+                    marked_for_deletion.append(b)
+        if not debug:
+            print(f"Deleted {len(marked_for_deletion)} intervals")
+        for d in marked_for_deletion:
+            if (
+                d in intervals_list
+            ):  # Might have duplicates due to numerical quirks - float comparison
+                intervals_list.remove(d)
+
+        self.intervals = intervals_list
+        self.num_intervals = len(intervals_list)
 
     def _get_centroid(self, node_tuple: tuple[int, ...]) -> np.ndarray:
         # TODO: See if adding flags to cache intermediary operations for zen mapper good?
