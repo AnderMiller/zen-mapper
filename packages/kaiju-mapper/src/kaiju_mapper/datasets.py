@@ -3,10 +3,12 @@ Methods for generating synthetic topological data
 """
 
 import sys
+from importlib import resources
 
 import numpy as np
 import numpy.typing as npt
 
+import kaiju_mapper
 from kaiju_mapper.types import Seed
 
 
@@ -282,3 +284,38 @@ def annulus(
         + minor_radius
     )
     return directions * radii[:, np.newaxis]
+
+
+def _load_from_off(name: str) -> np.ndarray:
+    """Return (n_vertices, 3) array of vertex coordinates from an OFF file.
+    See: 'https://en.wikipedia.org/wiki/OFF_(file_format)'
+    """
+    file = resources.files(kaiju_mapper).joinpath("data", f"{name}.off")
+
+    off = file.open(mode="r", encoding="utf-8")
+    if "OFF" != off.readline().strip():
+        raise TypeError(f"{file} does not have a valid OFF header")
+
+    num_vertices, *_ = tuple([int(s) for s in off.readline().strip().split(" ")])
+
+    vertices = [
+        [float(s) for s in off.readline().strip().split(" ")]
+        for i_vert in range(num_vertices)
+    ]
+
+    return np.asarray(vertices)
+
+
+def human() -> np.ndarray:
+    """Return human dataset."""
+    return _load_from_off("human")
+
+
+def octopus() -> np.ndarray:
+    """Return octopus dataset."""
+    return _load_from_off("octopus")
+
+
+def table() -> np.ndarray:
+    """Return table dataset."""
+    return _load_from_off("table")
